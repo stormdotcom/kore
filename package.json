@@ -24,7 +24,9 @@
     ]
   },
   "pkg": {
-    "assets": [],
+    "assets": [
+      "node_modules/blessed/usr/**"
+    ],
     "outputPath": "dist-pkg"
   },
   "devDependencies": {

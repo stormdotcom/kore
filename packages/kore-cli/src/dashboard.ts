@@ -322,6 +322,10 @@ export class Dashboard {
   }
 
   destroy(): void {
-    this.screen.destroy();
+    try {
+      this.screen.destroy();
+    } catch {
+      // blessed can throw when program is undefined (e.g. failed init or packaged exe)
+    }
   }
 }
