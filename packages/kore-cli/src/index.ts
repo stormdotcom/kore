@@ -78,7 +78,7 @@ function checkTerminalSize(): void {
 
   if (!isValid && process.platform === "win32") {
     try {
-      execSync(`mode con: cols=${MIN_COLS} lines=${MIN_ROWS}`, {
+      execSync(`cmd /c mode con: cols=${MIN_COLS} lines=${MIN_ROWS}`, {
         stdio: "ignore",
         timeout: 1000,
       });
