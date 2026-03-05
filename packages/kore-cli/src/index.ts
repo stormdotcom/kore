@@ -56,12 +56,18 @@ Examples:
 }
 
 function checkTerminalSize(): void {
-  const cols = process.stdout.columns ?? 80;
-  const rows = process.stdout.rows ?? 24;
+  const cols = process.stdout.columns;
+  const rows = process.stdout.rows;
+  if (cols == null || rows == null) {
+    process.stderr.write(
+      `[kore] Cannot detect terminal size. Run in an interactive terminal (PowerShell, Windows Terminal, etc.).\n`
+    );
+    process.exit(1);
+  }
   if (cols % 2 !== 0 || rows % 4 !== 0) {
     process.stderr.write(
       `[kore] Terminal size must be: width multiple of 2, height multiple of 4.\n` +
-        `  Current: ${cols}×${rows}. Resize terminal or use a larger window (e.g. 80×24).\n`
+        `  Current: ${cols}×${rows}. Resize to e.g. 80×24 or 82×24.\n`
     );
     process.exit(1);
   }
