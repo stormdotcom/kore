@@ -1,8 +1,12 @@
+import { execSync } from "node:child_process";
 import { MetricsCollector } from "kore-core";
 import type { SystemSnapshot } from "kore-core";
 import { Dashboard } from "./dashboard.js";
 import { loadConfig, saveConfig } from "./config.js";
 import { getTheme, getThemeNames } from "./themes.js";
+
+const MIN_COLS = 80;
+const MIN_ROWS = 24;
 
 interface CliArgs {
   theme: string | null;
@@ -56,14 +60,35 @@ Examples:
 }
 
 function checkTerminalSize(): void {
-  const cols = process.stdout.columns;
-  const rows = process.stdout.rows;
+  let cols = process.stdout.columns;
+  let rows = process.stdout.rows;
+
   if (cols == null || rows == null) {
     process.stderr.write(
       `[kore] Cannot detect terminal size. Run in an interactive terminal (PowerShell, Windows Terminal, etc.).\n`
     );
     process.exit(1);
   }
+
+  const isValid =
+    cols % 2 === 0 &&
+    rows % 4 === 0 &&
+    cols >= MIN_COLS &&
+    rows >= MIN_ROWS;
+
+  if (!isValid && process.platform === "win32") {
+    try {
+      execSync(`mode con: cols=${MIN_COLS} lines=${MIN_ROWS}`, {
+        stdio: "ignore",
+        timeout: 1000,
+      });
+      cols = process.stdout.columns ?? cols;
+      rows = process.stdout.rows ?? rows;
+    } catch {
+      // mode may fail in Windows Terminal; fall through to error
+    }
+  }
+
   if (cols % 2 !== 0 || rows % 4 !== 0) {
     process.stderr.write(
       `[kore] Terminal size must be: width multiple of 2, height multiple of 4.\n` +
@@ -71,9 +96,9 @@ function checkTerminalSize(): void {
     );
     process.exit(1);
   }
-  if (cols < 80 || rows < 24) {
+  if (cols < MIN_COLS || rows < MIN_ROWS) {
     process.stderr.write(
-      `[kore] Terminal too small. Minimum 80×24, current ${cols}×${rows}.\n`
+      `[kore] Terminal too small. Minimum ${MIN_COLS}×${MIN_ROWS}, current ${cols}×${rows}.\n`
     );
     process.exit(1);
   }
