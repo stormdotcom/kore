@@ -55,7 +55,27 @@ Examples:
   return args;
 }
 
+function checkTerminalSize(): void {
+  const cols = process.stdout.columns ?? 80;
+  const rows = process.stdout.rows ?? 24;
+  if (cols % 2 !== 0 || rows % 4 !== 0) {
+    process.stderr.write(
+      `[kore] Terminal size must be: width multiple of 2, height multiple of 4.\n` +
+        `  Current: ${cols}×${rows}. Resize terminal or use a larger window (e.g. 80×24).\n`
+    );
+    process.exit(1);
+  }
+  if (cols < 80 || rows < 24) {
+    process.stderr.write(
+      `[kore] Terminal too small. Minimum 80×24, current ${cols}×${rows}.\n`
+    );
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
+  checkTerminalSize();
+
   const cliArgs = parseArgs(process.argv);
   const config = await loadConfig();
 
