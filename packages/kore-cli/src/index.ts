@@ -18,6 +18,7 @@ function parseArgs(argv: string[]): CliArgs {
 
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
+    if (!arg) continue;
 
     if (arg === "--theme" || arg === "-t") {
       const themeArg = argv[i + 1];
