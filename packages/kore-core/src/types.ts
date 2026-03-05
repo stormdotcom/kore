@@ -67,3 +67,27 @@ export interface CollectorConfig {
   maxHistoryLength: number;
   topProcessCount: number;
 }
+
+export interface ThemeDefinition {
+  name: string;
+  colors: {
+    bg: string;
+    bgPanel: string;
+    border: string;
+    borderFocused: string;
+    textPrimary: string;
+    textDim: string;
+    label: string;
+    barFilled: string;
+    barWarn: string;
+    barAlert: string;
+    barEmpty: string;
+    sparkline: string;
+    headerBg: string;
+    headerText: string;
+  };
+  characters: {
+    upChar: string;
+    downChar: string;
+  };
+}

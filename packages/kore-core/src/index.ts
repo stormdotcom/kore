@@ -15,4 +15,5 @@ export type {
   ProcessInfo,
   SystemInfo,
   SystemSnapshot,
+  ThemeDefinition,
 } from "./types.js";

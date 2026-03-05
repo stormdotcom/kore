@@ -1,12 +1,13 @@
 import blessed from "blessed";
 import contrib from "blessed-contrib";
-import type { SystemSnapshot } from "kore-core";
+import type { SystemSnapshot, ThemeDefinition } from "kore-core";
 import {
   formatBytesPerSec,
   formatGb,
   formatPercent,
   formatUptime,
 } from "kore-core";
+import { getTheme, getNextTheme } from "./themes.js";
 
 interface DashboardWidgets {
   cpuLine: contrib.Widgets.LineElement;
@@ -25,8 +26,15 @@ export class Dashboard {
   private rxHistory: number[] = [];
   private txHistory: number[] = [];
   private maxSparkHistory = 30;
+  private currentTheme: ThemeDefinition;
+  private onThemeChange: (theme: ThemeDefinition) => Promise<void>;
 
-  constructor() {
+  constructor(
+    initialTheme: ThemeDefinition,
+    onThemeChange: (theme: ThemeDefinition) => Promise<void>
+  ) {
+    this.currentTheme = initialTheme;
+    this.onThemeChange = onThemeChange;
     this.screen = blessed.screen({
       smartCSR: true,
       title: "kore — system monitor",
@@ -41,17 +49,20 @@ export class Dashboard {
 
     this.widgets = this.buildWidgets();
     this.bindKeys();
+    this.applyTheme();
   }
 
   private buildWidgets(): DashboardWidgets {
+    const t = this.currentTheme.colors;
+
     const cpuLine = this.grid.set(0, 0, 4, 8, contrib.line, {
       label: " CPU Usage (%) ",
       showLegend: true,
       legend: { width: 12 },
       style: {
-        line: "cyan",
-        text: "white",
-        baseline: "white",
+        line: t.sparkline,
+        text: t.textPrimary,
+        baseline: t.textPrimary,
       },
       xLabelPadding: 3,
       xPadding: 5,
@@ -64,7 +75,7 @@ export class Dashboard {
       label: " Memory ",
       radius: 10,
       arcWidth: 3,
-      remainColor: "black",
+      remainColor: t.barEmpty,
       yPadding: 2,
     }) as contrib.Widgets.DonutElement;
 
@@ -72,8 +83,8 @@ export class Dashboard {
       label: " Network I/O ",
       tags: true,
       style: {
-        fg: "cyan",
-        titleFg: "white",
+        fg: t.sparkline,
+        titleFg: t.textPrimary,
       },
     }) as contrib.Widgets.SparklineElement;
 
@@ -82,8 +93,8 @@ export class Dashboard {
       tags: true,
       padding: { left: 1, top: 1 },
       style: {
-        fg: "white",
-        border: { fg: "cyan" },
+        fg: t.textPrimary,
+        border: { fg: t.label },
       },
       border: { type: "line" },
     }) as blessed.Widgets.BoxElement;
@@ -92,7 +103,7 @@ export class Dashboard {
       label: " Disks ",
       columnSpacing: 2,
       columnWidth: [16, 12, 10, 10, 8],
-      fg: "white",
+      fg: t.textPrimary,
       keys: false,
       interactive: false,
     }) as contrib.Widgets.TableElement;
@@ -101,7 +112,7 @@ export class Dashboard {
       label: " Top Processes ",
       columnSpacing: 2,
       columnWidth: [8, 20, 8, 8],
-      fg: "white",
+      fg: t.textPrimary,
       keys: false,
       interactive: false,
     }) as contrib.Widgets.TableElement;
@@ -113,6 +124,14 @@ export class Dashboard {
     this.screen.key(["q", "C-c", "escape"], () => {
       this.destroy();
       process.exit(0);
+    });
+
+    this.screen.key(["t"], async () => {
+      const nextThemeName = getNextTheme(this.currentTheme.name);
+      this.currentTheme = getTheme(nextThemeName);
+      this.applyTheme();
+      await this.onThemeChange(this.currentTheme);
+      this.screen.render();
     });
   }
 
@@ -142,12 +161,13 @@ export class Dashboard {
       String(i)
     );
 
+    const t = this.currentTheme.colors;
     const seriesData: contrib.Widgets.LineData[] = [
       {
         title: "Total",
         x: xLabels,
         y: overall ?? [],
-        style: { line: "cyan" },
+        style: { line: t.sparkline },
       },
     ];
 
@@ -155,14 +175,27 @@ export class Dashboard {
   }
 
   private updateMemory(snapshot: SystemSnapshot): void {
+    const t = this.currentTheme.colors;
     const ramPercent = snapshot.memory.usagePercent;
     const swapPercent = snapshot.memory.swapUsagePercent;
+
+    const getRamColor = (percent: number): string => {
+      if (percent > 90) return t.barAlert;
+      if (percent > 70) return t.barWarn;
+      return t.barFilled;
+    };
+
+    const getSwapColor = (percent: number): string => {
+      if (percent > 80) return t.barAlert;
+      if (percent > 50) return t.barWarn;
+      return t.barFilled;
+    };
 
     const data = [
       {
         label: `RAM ${formatGb(snapshot.memory.usedGb)}/${formatGb(snapshot.memory.totalGb)}`,
         percent: Math.round(ramPercent),
-        color: ramPercent > 90 ? "red" : ramPercent > 70 ? "yellow" : "green",
+        color: getRamColor(ramPercent),
       },
     ];
 
@@ -170,8 +203,7 @@ export class Dashboard {
       data.push({
         label: `Swap ${formatGb(snapshot.memory.swapUsedGb)}/${formatGb(snapshot.memory.swapTotalGb)}`,
         percent: Math.round(swapPercent),
-        color:
-          swapPercent > 80 ? "red" : swapPercent > 50 ? "yellow" : "cyan",
+        color: getSwapColor(swapPercent),
       });
     }
 
@@ -247,6 +279,46 @@ export class Dashboard {
     ];
 
     this.widgets.systemInfo.setContent(lines.join("\n"));
+  }
+
+  private applyTheme(): void {
+    const t = this.currentTheme.colors;
+
+    // CPU Line
+    if (this.widgets.cpuLine.style) {
+      this.widgets.cpuLine.style.line = t.sparkline;
+      this.widgets.cpuLine.style.text = t.textPrimary;
+      this.widgets.cpuLine.style.baseline = t.textPrimary;
+    }
+
+    // Memory Donut
+    if (this.widgets.memDonut.options) {
+      this.widgets.memDonut.options.remainColor = t.barEmpty;
+    }
+
+    // Network Sparkline
+    if (this.widgets.netSpark.style) {
+      this.widgets.netSpark.style.fg = t.sparkline;
+      this.widgets.netSpark.style.titleFg = t.textPrimary;
+    }
+
+    // System Info Box
+    if (this.widgets.systemInfo.style) {
+      this.widgets.systemInfo.style.fg = t.textPrimary;
+      if (this.widgets.systemInfo.style.border) {
+        this.widgets.systemInfo.style.border.fg = t.label;
+      }
+    }
+
+    // Disk Table
+    if (this.widgets.diskTable.options) {
+      this.widgets.diskTable.options.fg = t.textPrimary;
+    }
+
+    // Process Table
+    if (this.widgets.processTable.options) {
+      this.widgets.processTable.options.fg = t.textPrimary;
+    }
   }
 
   destroy(): void {
