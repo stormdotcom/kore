@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Kore System Monitor
+Comment=Real-time cross-platform system monitor
+Exec=gnome-terminal -- bash -c "cd '%PROJECT_DIR%' && node packages/kore-cli/dist/index.js; exec bash"
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;
+StartupNotify=true
