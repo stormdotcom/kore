@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { MetricsCollector } from "kore-core";
 import type { SystemSnapshot } from "kore-core";
 import { Dashboard } from "./dashboard.js";
