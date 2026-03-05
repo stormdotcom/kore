@@ -43,6 +43,28 @@ Displays CPU, memory, network, and disk metrics in a modern TUI dashboard with l
 
 ## Install
 
+### Option 1: Standalone Executables (Recommended)
+
+Download prebuilt executables for Windows or Linux - no Node.js required:
+
+**Windows:**
+```powershell
+# Download kore-win.exe from releases
+# Run directly:
+.\kore-win.exe --help
+.\kore-win.exe --theme nord
+```
+
+**Linux:**
+```bash
+# Download kore-linux from releases
+chmod +x kore-linux
+./kore-linux --help
+./kore-linux --theme matrix
+```
+
+### Option 2: npm/pnpm (Requires Node.js)
+
 ```bash
 npm install -g kore-cli
 ```
@@ -57,6 +79,34 @@ pnpm add -g kore-cli
 
 ## Usage
 
+### Quick Launch (New Terminal Window)
+
+Launch Kore in a new terminal window with one command:
+
+**Using npm script (cross-platform):**
+```bash
+pnpm launch
+```
+
+**Or use the scripts directly:**
+
+**Windows (PowerShell):**
+```powershell
+.\launch.ps1
+```
+
+**Linux (Bash/Zsh):**
+```bash
+./launch.sh
+```
+
+These scripts will:
+- Auto-detect your terminal emulator
+- Open a new window with Kore running
+- Auto-build if not already built
+
+### Command Line Options
+
 ```bash
 kore                        # launch full TUI dashboard
 kore --theme nord           # start with nord theme
@@ -68,6 +118,27 @@ kore --json | jq '.cpu.total'
 kore --version
 kore --help
 ```
+
+### Create Desktop Shortcut
+
+**Using npm script (cross-platform):**
+```bash
+pnpm create:shortcut
+```
+
+**Or use the scripts directly:**
+
+**Windows:**
+```powershell
+.\scripts\create-windows-shortcut.ps1
+```
+Creates a desktop shortcut that launches Kore in a new window.
+
+**Linux:**
+```bash
+./scripts/install-linux-launcher.sh
+```
+Installs Kore as a desktop application in your application menu.
 
 ---
 
@@ -175,6 +246,51 @@ kore/
 
 - Node.js 18 or 20 LTS
 - Terminal size: 80×24 minimum
+
+---
+
+## Development
+
+### Building from Source
+
+```bash
+# Install dependencies
+pnpm install
+
+# Build all packages
+pnpm build
+
+# Run in current terminal
+pnpm start
+
+# Launch in new terminal window
+pnpm launch
+
+# Run with custom interval
+node packages/kore-cli/dist/index.js 2000
+
+# Create desktop shortcut/launcher
+pnpm create:shortcut
+```
+
+### Packaging Executables
+
+```bash
+# Package for both Windows and Linux
+pnpm run package
+
+# Package for Windows only (.exe)
+pnpm run package:windows
+
+# Package for Linux only (binary)
+pnpm run package:linux
+```
+
+Executables will be created in `dist-pkg/`:
+- **Windows**: `kore-win.exe` (~44 MB, Brotli compressed)
+- **Linux**: `kore-linux` (~52 MB, Brotli compressed)
+
+These are self-contained executables with Node.js runtime bundled - no dependencies required.
 
 ---
 
